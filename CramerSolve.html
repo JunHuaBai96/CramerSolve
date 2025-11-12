@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>线性方程组求解器</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f7fa;
+        }
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .container {
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            padding: 25px;
+            margin-bottom: 20px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        th, td {
+            padding: 12px 15px;
+            text-align: center;
+            border-bottom: 1px solid #ddd;
+        }
+        th {
+            background-color: #f2f6fc;
+            font-weight: 600;
+        }
+        input {
+            width: 90%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            text-align: center;
+        }
+        .select-cell {
+            width: 60px;
+        }
+        .select-cell input {
+            width: auto;
+            transform: scale(1.2);
+            cursor: pointer;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .reset-btn {
+            background-color: #f44336;
+        }
+        .reset-btn:hover {
+            background-color: #d32f2f;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #e8f5e9;
+            border-radius: 4px;
+            border-left: 4px solid #4CAF50;
+        }
+        .error {
+            background-color: #ffebee;
+            border-left: 4px solid #f44336;
+        }
+        .calculation {
+            background-color: #f9f9f9;
+            padding: 15px;
+            border-radius: 4px;
+            margin-top: 20px;
+            font-family: monospace;
+            white-space: pre-line;
+        }
+        .instructions {
+            background-color: #e3f2fd;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+        }
+        .button-container {
+            text-align: center;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>线性方程组求解器</h1>
+    
+    <div class="container instructions">
+        <h3>使用说明</h3>
+        <p>根据方程 <strong>b = x1 × f1 + x2 × f2</strong>，输入或添加数据后勾选任意两行进行求解变量a和b。</p>
+        <p>提示：表格中的x1对应变量a，x2对应变量b，请确保恰好选择两行后点击求解。</p>
+    </div>
+    
+    <div class="container">
+        <h3>输入数据</h3>
+        <table id="data-table">
+            <thead>
+                <tr>
+                    <th class="select-cell">选择</th>
+                    <th>x1 (对应变量a)</th>
+                    <th>f1</th>
+                    <th>x2 (对应变量b)</th>
+                    <th>f2</th>
+                    <th>b</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+        
+        <div class="button-container">
+            <button id="add-row">添加行</button>
+            <button id="solve-btn">求解</button>
+            <button id="reset-btn" class="reset-btn">重置</button>
+        </div>
+    </div>
+    
+    <div class="container">
+        <h3>求解结果</h3>
+        <div id="result"></div>
+        <div id="calculation"></div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const dataTable = document.getElementById('data-table');
+            const addRowBtn = document.getElementById('add-row');
+            const solveBtn = document.getElementById('solve-btn');
+            const resetBtn = document.getElementById('reset-btn');
+            const resultDiv = document.getElementById('result');
+            const calculationDiv = document.getElementById('calculation');
+            const defaultRows = [
+                { f1: 0.5, f2: 0.5, b: 14 },
+                { f1: 0.4, f2: 0.6, b: 14.5 }
+            ];
+            
+            const createRow = (f1Value = 0.5, f2Value = 0.5, bValue = 14, isChecked = false) => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td class="select-cell"><input type="checkbox" class="row-select" ${isChecked ? 'checked' : ''}></td>
+                    <td><input type="text" value="a" readonly></td>
+                    <td><input type="number" class="f1" value="${f1Value}" step="0.1"></td>
+                    <td><input type="text" value="b" readonly></td>
+                    <td><input type="number" class="f2" value="${f2Value}" step="0.1"></td>
+                    <td><input type="number" class="b" value="${bValue}" step="0.1"></td>
+                `;
+                return tr;
+            };
+            
+            const resetTable = () => {
+                const tbody = dataTable.querySelector('tbody');
+                tbody.innerHTML = '';
+                
+                defaultRows.forEach((rowData, index) => {
+                    const newRow = createRow(rowData.f1, rowData.f2, rowData.b, index < 2);
+                    tbody.appendChild(newRow);
+                });
+                
+                resultDiv.innerHTML = '';
+                calculationDiv.innerHTML = '';
+            };
+            
+            // 添加新行
+            addRowBtn.addEventListener('click', function() {
+                const tbody = dataTable.querySelector('tbody');
+                const newRow = createRow(0.5, 0.5, 14, false);
+                tbody.appendChild(newRow);
+            });
+            
+            // 重置表格
+            resetBtn.addEventListener('click', resetTable);
+            
+            // 求解方程
+            solveBtn.addEventListener('click', function() {
+                const allRows = Array.from(dataTable.querySelectorAll('tbody tr'));
+                const selectedRows = allRows.filter(row => row.querySelector('.row-select')?.checked);
+                
+                if (selectedRows.length !== 2) {
+                    resultDiv.innerHTML = `<div class="result error">错误：请勾选恰好两行数据进行求解</div>`;
+                    calculationDiv.innerHTML = '';
+                    return;
+                }
+                
+                const equations = [];
+                for (const row of selectedRows) {
+                    const f1 = parseFloat(row.querySelector('.f1').value);
+                    const f2 = parseFloat(row.querySelector('.f2').value);
+                    const b = parseFloat(row.querySelector('.b').value);
+                    const rowIndex = allRows.indexOf(row) + 1;
+                    
+                    if (isNaN(f1) || isNaN(f2) || isNaN(b)) {
+                        resultDiv.innerHTML = `<div class="result error">错误：第${rowIndex}行数据不完整或格式不正确</div>`;
+                        calculationDiv.innerHTML = '';
+                        return;
+                    }
+                    
+                    equations.push({f1, f2, b});
+                }
+                
+                if (equations.length < 2) {
+                    resultDiv.innerHTML = `<div class="result error">错误：至少需要两行数据才能求解</div>`;
+                    calculationDiv.innerHTML = '';
+                    return;
+                }
+                
+                // 使用前两行数据求解
+                const eq1 = equations[0];
+                const eq2 = equations[1];
+                const eq1Index = allRows.indexOf(selectedRows[0]) + 1;
+                const eq2Index = allRows.indexOf(selectedRows[1]) + 1;
+                
+                // 使用克莱姆法则求解
+                const determinant = eq1.f1 * eq2.f2 - eq1.f2 * eq2.f1;
+                
+                if (determinant === 0) {
+                    resultDiv.innerHTML = `<div class="result error">错误：方程组无唯一解，请检查输入数据</div>`;
+                    calculationDiv.innerHTML = '';
+                    return;
+                }
+                
+                const a = (eq1.b * eq2.f2 - eq1.f2 * eq2.b) / determinant;
+                const b = (eq1.f1 * eq2.b - eq1.b * eq2.f1) / determinant;
+                
+                // 显示结果
+                resultDiv.innerHTML = `
+                    <div class="result">
+                        <h4>求解结果：</h4>
+                        <p>选用行：第${eq1Index}行与第${eq2Index}行</p>
+                        <p>a = ${a.toFixed(4)}</p>
+                        <p>b = ${b.toFixed(4)}</p>
+                    </div>
+                `;
+                
+                // 显示计算过程
+                let calculationText = `使用克莱姆法则求解以下方程组：\n\n`;
+                calculationText += `方程1(第${eq1Index}行): ${eq1.f1}a + ${eq1.f2}b = ${eq1.b}\n`;
+                calculationText += `方程2(第${eq2Index}行): ${eq2.f1}a + ${eq2.f2}b = ${eq2.b}\n\n`;
+                calculationText += `1. 计算系数行列式(D):\n`;
+                calculationText += `   D = (${eq1.f1} × ${eq2.f2}) - (${eq1.f2} × ${eq2.f1}) = ${eq1.f1 * eq2.f2} - ${eq1.f2 * eq2.f1} = ${determinant}\n\n`;
+                calculationText += `2. 计算a的行列式(Da):\n`;
+                calculationText += `   Da = (${eq1.b} × ${eq2.f2}) - (${eq1.f2} × ${eq2.b}) = ${eq1.b * eq2.f2} - ${eq1.f2 * eq2.b} = ${eq1.b * eq2.f2 - eq1.f2 * eq2.b}\n\n`;
+                calculationText += `3. 计算b的行列式(Db):\n`;
+                calculationText += `   Db = (${eq1.f1} × ${eq2.b}) - (${eq1.b} × ${eq2.f1}) = ${eq1.f1 * eq2.b} - ${eq1.b * eq2.f1} = ${eq1.f1 * eq2.b - eq1.b * eq2.f1}\n\n`;
+                calculationText += `4. 求解a和b:\n`;
+                calculationText += `   a = Da / D = ${(eq1.b * eq2.f2 - eq1.f2 * eq2.b)} / ${determinant} = ${a.toFixed(4)}\n`;
+                calculationText += `   b = Db / D = ${(eq1.f1 * eq2.b - eq1.b * eq2.f1)} / ${determinant} = ${b.toFixed(4)}`;
+                
+                calculationDiv.innerHTML = `<div class="calculation">${calculationText}</div>`;
+            });
+            
+            // 初始化默认数据
+            resetTable();
+        });
+    </script>
+</body>
+</html>
