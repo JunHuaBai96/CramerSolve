@@ -2,7 +2,7 @@
 
 CramerSolve is a lightweight single-page web app for solving 2-variable linear systems using Cramer's Rule. The interface is designed for quick experimentation in the browser with a clean, step-by-step breakdown of the calculations.
 
-
+<img width="469" height="802" alt="6a30bb39f3b615ac0e59083b80f9b7a2" src="https://github.com/user-attachments/assets/03c25f8c-15f0-4548-8ad7-209babc3c91c" />
 
 ## Features
 - Interactive data table for entering coefficients and right-hand-side values.
@@ -24,3 +24,4 @@ CramerSolve is a lightweight single-page web app for solving 2-variable linear s
 
 ## License
 [MIT License](./LICENSE)
+
